@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Signature</title>
+    <style>
+      body {
+        font-family: "Open Sans", sans-serif;
+        background-color: #f9f9f9;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      .main {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px;
+      }
+
+      .canvas-container {
+        width: 100%;
+        height: 500px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 40px;
+      }
+
+      .canvas {
+        border: 3px solid #d8d8d8;
+        border-radius: 8px;
+        width: 100%;
+        height: 100%;
+      }
+
+      .top,
+      .bottom {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+        margin-bottom: 30px;
+      }
+
+      .bottom {
+        margin-top: 5px; /* Added margin */
+      }
+
+      .block {
+        background-color: #f3f3f3;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        flex-basis: 30%;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+      }
+
+      .block:hover {
+        transform: translateY(-5px);
+      }
+
+      .block p {
+        margin-bottom: 15px;
+        font-weight: 600;
+        color: #555;
+      }
+
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #d8d8d8;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: "Open Sans", sans-serif;
+        transition: border-color 0.3s ease;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: #4caf50;
+        outline: none;
+      }
+
+      button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        font-weight: 600;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      .btn-danger {
+        background-color: #f44336;
+      }
+
+      .btn-danger:hover {
+        background-color: #da190b;
+      }
+
+      .btn-warning {
+        background-color: #ff9800;
+      }
+
+      .btn-warning:hover {
+        background-color: #e68a00;
+      }
+    </style>
+    <link rel="icon" href="favicon.png" />
+
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
+      crossorigin="anonymous"
+    />
+  </head>
+
+  <body>
+    <div class="main">
+      <div class="top">
+        <div class="block">
+          <p>Text color picker</p>
+          <input class="form-control" type="color" id="colorPicker" />
+        </div>
+        <div class="block">
+          <p>Background</p>
+          <input class="form-control" type="color" id="canvasColor" />
+        </div>
+        <!-- <div class="block">
+                <p>Thiccness slider</p>
+                <input type="range" class="form-control-range" id="lineWidthSlider" min="1" max="100" value="1">
+            </div> -->
+        <div class="block">
+          <p>Font size</p>
+          <select class="custom-select" type="select" id="fontSizePicker">
+            <option value="1">1px</option>
+            <option value="2">2px</option>
+            <option value="3">3px</option>
+            <option value="5">5px</option>
+            <option value="8">8px</option>
+            <option value="10">10px</option>
+            <option value="15">15px</option>
+            <option value="20">20px</option>
+            <option value="25">25px</option>
+            <option value="30">30px</option>
+            
+            
+          </select>
+        </div>
+      </div>
+
+      <canvas class="canvas" id="myCanvas" width="800" height="500"></canvas>
+
+      <div class="bottom">
+        <button type="button" class="btn btn-danger" id="clearButton">
+          Clear
+        </button>
+        <button type="button" class="btn btn-success" id="saveButton">
+          Save & download
+        </button>
+        <button type="button" class="btn btn-warning" id="retrieveButton">
+          Retrieve saved signature
+        </button>
+      </div>
+    </div>
+
+    <script>
+      let history = [];
+
+      const colorPicker = document.getElementById("colorPicker");
+      const canvasColor = document.getElementById("canvasColor");
+      const canvas = document.getElementById("myCanvas");
+      const undoButton = document.getElementById("undoButton");
+      const clearButton = document.getElementById("clearButton");
+      const saveButton = document.getElementById("saveButton");
+      const fontPicker = document.getElementById("fontPicker");
+      const textInput = document.getElementById("textInput");
+      const fontSizePicker = document.getElementById("fontSizePicker"); // add new element
+
+      const ctx = canvas.getContext("2d");
+
+      colorPicker.addEventListener("change", (event) => {
+        ctx.fillStyle = event.target.value;
+        ctx.strokeStyle = event.target.value;
+      });
+
+      canvasColor.addEventListener("change", (event) => {
+        ctx.fillStyle = event.target.value;
+        ctx.fillRect(0, 0, 800, 500);
+      });
+
+      canvas.addEventListener("mousedown", (event) => {
+        isDrawing = true;
+        lastX = event.offsetX;
+        lastY = event.offsetY;
+      });
+
+      canvas.addEventListener("mousemove", (event) => {
+        if (isDrawing) {
+          ctx.beginPath();
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(event.offsetX, event.offsetY);
+          ctx.stroke();
+
+          lastX = event.offsetX;
+          lastY = event.offsetY;
+        }
+      });
+
+      canvas.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+      });
+
+      canvas.addEventListener("mouseup", () => {
+        isDrawing = false;
+      });
+
+      fontSizePicker.addEventListener("change", (event) => {
+        ctx.lineWidth = event.target.value;
+        // ctx.font = `${fontPicker.value} ${event.target.value}px`;
+      });
+
+      clearButton.addEventListener("click", () => {
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+
+      // Add event listener for the save button
+      saveButton.addEventListener("click", () => {
+        localStorage.setItem("canvasContents", canvas.toDataURL());
+        // Create a new <a> element
+        let link = document.createElement("a");
+
+        // Set the download attribute and the href attribute of the <a> element
+        link.download = "my-canvas.png";
+        link.href = canvas.toDataURL();
+
+        // Dispatch a click event on the <a> element
+        link.click();
+      });
+
+      // Add event listener for the retrieve button
+      retrieveButton.addEventListener("click", () => {
+        // Retrieve the saved canvas contents from local storage
+        let savedCanvas = localStorage.getItem("canvasContents");
+
+        if (savedCanvas) {
+          let img = new Image();
+          img.src = savedCanvas;
+          ctx.drawImage(img, 0, 0);
+        }
+      });
+    </script>
+  </body>
+</html>
